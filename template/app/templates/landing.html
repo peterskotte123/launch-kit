@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ tagline }}</h1>
+<p class="muted">Start free. Upgrade when it earns it.</p>
+<p><a class="btn" href="{{ '/app' if user else '/login' }}">Get started</a></p>
+
+<h2 id="pricing" style="margin-top:56px">Pricing</h2>
+<div class="plans">
+  <div class="plan">
+    <h3>Free</h3>
+    <div class="price">$0</div>
+    <ul>{% for f in free %}<li>{{ f }}</li>{% endfor %}</ul>
+    <a class="btn ghost" href="{{ '/app' if user else '/login' }}">Start free</a>
+  </div>
+  <div class="plan">
+    <h3>{{ product.name }}</h3>
+    <div class="price">${{ '%g' % (product.unit_amount / 100) }}{% if product.interval %}<span class="muted" style="font-size:16px">/{{ product.interval }}</span>{% endif %}</div>
+    <ul>{% for f in paid %}<li>{{ f }}</li>{% endfor %}</ul>
+    <a class="btn" href="/checkout">Upgrade</a>
+  </div>
+</div>
+{% endblock %}

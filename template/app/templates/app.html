@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+{% if welcome %}<p><strong>Thanks, you're subscribed.</strong> It can take a few seconds to show up.</p>{% endif %}
+<h1>{{ app_name }}</h1>
+<p class="muted">Signed in as {{ user.email }}</p>
+
+<p>The free part of the product goes here.</p>
+
+{% if paid %}
+  <p>The paid part of the product goes here.</p>
+  <p><a class="btn ghost" href="/portal">Manage subscription</a></p>
+{% else %}
+  <p><a class="btn" href="/checkout">Upgrade to {{ product.name }}</a></p>
+{% endif %}
+{% endblock %}

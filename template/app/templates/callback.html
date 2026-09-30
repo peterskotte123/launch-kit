@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<p id="msg" class="muted">Signing you in…</p>
+<script>
+  const params = new URLSearchParams(location.hash.slice(1) + "&" + location.search.slice(1));
+  const err = params.get("error_description") || params.get("error");
+  if (err) {
+    document.getElementById("msg").innerHTML = "Sign-in failed: " + err.replace(/</g, "&lt;") + ' · <a href="/login">try again</a>';
+  } else {
+    sb.auth.getSession().then(({ data, error }) => {
+      if (data.session) { setToken(data.session); location.replace("/app"); }
+      else document.getElementById("msg").innerHTML = "Sign-in failed: " + ((error && error.message) || "no session") + ' · <a href="/login">try again</a>';
+    });
+  }
+</script>
+{% endblock %}

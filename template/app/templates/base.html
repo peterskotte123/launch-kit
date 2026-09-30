@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<style>
+  :root { --fg:#16181d; --muted:#5b6170; --bg:#fff; --line:#e4e6eb; --accent:#2f5bea; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#eceef2; --muted:#9aa1ae; --bg:#111318; --line:#2a2e37; --accent:#6d8cff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg); background:var(--bg); }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 64px; }
+  nav { display:flex; justify-content:space-between; align-items:center; padding:8px 0 32px; }
+  nav a { color:var(--muted); text-decoration:none; margin-left:16px; }
+  h1 { font-size:clamp(28px,5vw,44px); line-height:1.15; margin:24px 0 12px; }
+  .muted { color:var(--muted); }
+  .btn { display:inline-block; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:12px 20px;
+         font:inherit; font-weight:600; text-decoration:none; cursor:pointer; }
+  .btn.ghost { background:transparent; color:var(--accent); border:1px solid var(--line); }
+  .plans { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:24px; }
+  .plan { border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .price { font-size:32px; font-weight:700; }
+  input { font:inherit; padding:12px; border:1px solid var(--line); border-radius:8px; width:100%; max-width:360px;
+          background:var(--bg); color:var(--fg); }
+</style>
+{% if supabase_url %}
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const sb = supabase.createClient({{ supabase_url|tojson }}, {{ supabase_anon_key|tojson }});
+  function setToken(session) {
+    document.cookie = session
+      ? "sb-access-token=" + session.access_token + "; path=/; max-age=3600; samesite=lax" + (location.protocol === "https:" ? "; secure" : "")
+      : "sb-access-token=; path=/; max-age=0";
+  }
+  sb.auth.onAuthStateChange((_event, session) => setToken(session));
+  async function signOut() { await sb.auth.signOut(); setToken(null); location.href = "/"; }
+</script>
+{% endif %}
+</head>
+<body><main>
+<nav>
+  <a href="/" style="margin:0;color:var(--fg);font-weight:700">{{ app_name }}</a>
+  <span>{% if user %}<a href="/app">App</a><a href="#" onclick="signOut();return false">Sign out</a>{% else %}<a href="/login">Sign in</a>{% endif %}</span>
+</nav>
+{% block content %}{% endblock %}
+</main></body>
+</html>

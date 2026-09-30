@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "launchkit"
+version = "0.1.0"
+description = "Shared Stripe payments, webhooks, billing state and Supabase auth for small FastAPI/Flask apps"
+requires-python = ">=3.10"
+dependencies = [
+    "stripe>=12",
+    "psycopg[binary]>=3.1",
+    "PyJWT[crypto]>=2.8",
+]
+
+[project.optional-dependencies]
+fastapi = ["fastapi>=0.110"]
+test = ["pytest>=8", "fastapi>=0.110", "httpx>=0.27"]
+
+[tool.setuptools]
+packages = ["launchkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Sign in</h1>
+<p class="muted">We'll email you a link. No password.</p>
+<form id="f">
+  <p><input id="email" type="email" required placeholder="you@example.com" autocomplete="email"></p>
+  <button class="btn" type="submit">Email me a link</button>
+</form>
+<p id="msg" class="muted"></p>
+<script>
+  document.getElementById("f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("msg");
+    if (typeof sb === "undefined") { msg.textContent = "Sign-in is not configured (SUPABASE_URL is empty)."; return; }
+    const { error } = await sb.auth.signInWithOtp({
+      email: document.getElementById("email").value,
+      options: { emailRedirectTo: location.origin + "/auth/callback" },
+    });
+    msg.textContent = error ? error.message : "Check your email for the sign-in link.";
+  });
+</script>
+{% endblock %}
