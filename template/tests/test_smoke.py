@@ -35,8 +35,10 @@ def signed(event):
 
 
 def test_landing_shows_pricing(client):
+    from app.main import PRODUCT
     r = client.get("/")
-    assert r.status_code == 200 and "$9" in r.text and "/month" in r.text
+    assert r.status_code == 200 and f"${PRODUCT['unit_amount'] / 100:g}" in r.text
+    assert not PRODUCT["interval"] or "/" + PRODUCT["interval"] in r.text
 
 
 def test_signed_out_redirects_to_login(client):
