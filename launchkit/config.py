@@ -4,7 +4,8 @@ import os
 
 _overrides = {}
 
-NAMES = ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "DATABASE_URL", "SUPABASE_URL", "SUPABASE_JWT_SECRET", "DB_SCHEMA")
+NAMES = ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "DATABASE_URL", "SUPABASE_URL", "SUPABASE_JWT_SECRET", "DB_SCHEMA",
+         "APP_ID")
 
 
 def configure(**values):
@@ -19,3 +20,8 @@ def get(name, required=True):
     if required and not value:
         raise RuntimeError(f"{name} is not set")
     return value
+
+
+def app_id():
+    """Tags this app's Stripe objects so apps sharing one Stripe account ignore each other's events. Defaults to DB_SCHEMA."""
+    return get("APP_ID", required=False) or get("DB_SCHEMA", required=False)

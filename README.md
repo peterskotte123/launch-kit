@@ -16,7 +16,13 @@ stripe listen --api-key "$STRIPE_SECRET_KEY" --forward-to localhost:8000/stripe/
 ```
 
 ## One Stripe login, one Supabase project
-- **Stripe:** one Organization, with one account per business. Each app's `.env` holds that business's keys.
+- **Stripe:** one account for every app. All apps share `STRIPE_SECRET_KEY`. Each app has its own webhook endpoint
+  and its own `STRIPE_WEBHOOK_SECRET`.
+  - Every endpoint receives every app's events. `checkout()` and `ensure_price()` tag their Stripe objects with
+    `metadata.app`, and webhooks ignore events tagged for another app.
+  - The app tag is `APP_ID`, which defaults to `DB_SCHEMA`.
+  - Prefix lookup keys with the app name (`permitgap_report`). `ensure_price()` refuses a lookup key that another
+    app owns.
 - **Supabase:** one project for every app. All apps share `DATABASE_URL`; each app sets its own `DB_SCHEMA`, so its tables (`stripe_events`, `billing_customers`, and the app's own) live in a separate Postgres schema.
 - **Shared sign-ins:** Supabase Auth has one user pool per project, so someone who signs up for app A can sign in to app B with the same email. Access is still per app, because `has_access()` reads that app's schema.
 - **Redirect URLs:** add each app's domain under Supabase Auth → URL Configuration → Redirect URLs.

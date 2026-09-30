@@ -53,7 +53,7 @@ def test_pay_then_access(client):
     assert r.headers["location"] == "https://checkout.stripe.test/s"
 
     session = {"id": "cs_1", "mode": "subscription", "status": "complete", "client_reference_id": "user-1",
-               "customer": "cus_1", "subscription": "sub_1", "metadata": {"lookup_key": "newthing_pro_monthly"}}
+               "customer": "cus_1", "subscription": "sub_1", "metadata": {"lookup_key": "newthing_pro_monthly", "app": "newthing"}}
     body, headers = signed({"id": "evt_1", "type": "checkout.session.completed", "data": {"object": session}})
     assert client.post("/stripe/webhook", content=body, headers=headers).json() == {"received": True}
     assert client.post("/stripe/webhook", content=body, headers=headers).json()["duplicate"] is True

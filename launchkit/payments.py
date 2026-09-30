@@ -16,13 +16,18 @@ def ensure_price(lookup_key, name, unit_amount, interval=None, currency="usd", d
     if lookup_key in _price_cache:
         return _price_cache[lookup_key]
     s = _client()
+    app = config.app_id()
     found = s.Price.list(lookup_keys=[lookup_key], active=True, limit=1).data
     if found:
         price = found[0]
+        owner = (price.to_dict().get("metadata") or {}).get("app")
+        if app and owner and owner != app:
+            raise ValueError(f"lookup_key {lookup_key!r} belongs to app {owner!r}; prefix lookup keys with the app name")
     else:
-        product = s.Product.create(name=name, **({"description": description} if description else {}))
+        meta = {"metadata": {"app": app}} if app else {}
+        product = s.Product.create(name=name, **({"description": description} if description else {}), **meta)
         price = s.Price.create(product=product.id, unit_amount=unit_amount, currency=currency, lookup_key=lookup_key,
-                               **({"recurring": {"interval": interval}} if interval else {}))
+                               **({"recurring": {"interval": interval}} if interval else {}), **meta)
     _price_cache[lookup_key] = price
     return price
 
@@ -43,7 +48,8 @@ def checkout(lookup_key, success_url, cancel_url, ref=None, email=None, customer
     extra passes straight through to Stripe (e.g. shipping_address_collection, allow_promotion_codes)."""
     price = get_price(lookup_key)
     mode = "subscription" if price.recurring else "payment"
-    meta = {"lookup_key": lookup_key, **(metadata or {})}
+    app = config.app_id()
+    meta = {"lookup_key": lookup_key, **({"app": app} if app else {}), **(metadata or {})}
     params = dict(mode=mode, line_items=[{"price": price.id, "quantity": quantity}], success_url=success_url,
                   cancel_url=cancel_url, metadata=meta, **extra)
     if ref:
@@ -54,6 +60,8 @@ def checkout(lookup_key, success_url, cancel_url, ref=None, email=None, customer
         params["customer_email"] = email
     if mode == "subscription":
         params.setdefault("subscription_data", {}).setdefault("metadata", {}).update(meta, **({"ref": str(ref)} if ref else {}))
+    else:  # so the charge and any refund can be traced back to this app
+        params.setdefault("payment_intent_data", {}).setdefault("metadata", {}).update(meta)
     return _client().checkout.Session.create(**params)
 
 

@@ -13,7 +13,7 @@ import collections
 
 import stripe
 
-from . import billing, config
+from . import billing, config, payments
 
 _handlers = collections.defaultdict(list)
 
@@ -36,6 +36,23 @@ def verify(payload, sig):
         raise InvalidSignature(str(e)) from e
 
 
+def _is_ours(obj, event_type):
+    """With one Stripe account, every app's webhook receives every app's events. Checkouts and subscriptions made by
+    checkout() carry metadata.app; anything else untagged (charges, invoices) passes through, and the built-in handlers
+    only touch rows this app created."""
+    app = config.app_id()
+    if not app:
+        return True
+    meta = obj.get("metadata") or {}
+    owner = meta.get("app") or ((obj.get("subscription_details") or {}).get("metadata") or {}).get("app")
+    if owner:
+        return owner == app
+    if event_type.startswith(("checkout.session.", "customer.subscription.")):
+        # Sessions from launch-kit 0.1 have no app tag, only a lookup_key: accept this app's own prices.
+        return meta.get("lookup_key") in payments._price_cache
+    return True
+
+
 def handle(payload, sig):
     event = verify(payload, sig)
     return dispatch(event)
@@ -52,6 +69,8 @@ def dispatch(event):
                 return {"received": True, "duplicate": True}
             obj = event["data"]["object"]
             obj = obj.to_dict() if hasattr(obj, "to_dict") else dict(obj)
+            if not _is_ours(obj, event_type):
+                return {"received": True, "ignored": "another app"}
             for fn in billing.builtin_handlers.get(event_type, []):
                 fn(obj, conn)
             for fn in _handlers.get(event_type, []):

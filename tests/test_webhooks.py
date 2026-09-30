@@ -100,16 +100,20 @@ def test_subscription_without_ref_updates_by_subscription_id():
 
 
 def test_schemas_isolate_apps(monkeypatch):
-    s = {"id": "cs_1", "mode": "payment", "payment_status": "paid", "client_reference_id": "user-1", "metadata": {}}
+    # One Stripe account: both apps' webhooks receive app_a's checkout; only app_a acts on it.
+    s = {"id": "cs_1", "mode": "payment", "payment_status": "paid", "client_reference_id": "user-1",
+         "metadata": {"app": "app_a"}}
     monkeypatch.setenv("DB_SCHEMA", "app_a")
     billing.init_schema()
     webhooks.handle(*signed(event("checkout.session.completed", s, "evt_a")))
     assert billing.has_access("user-1")
     monkeypatch.setenv("DB_SCHEMA", "app_b")
     billing.init_schema()
+    calls = []
+    webhooks.on("checkout.session.completed")(lambda obj, ev: calls.append(obj["id"]))
+    assert webhooks.handle(*signed(event("checkout.session.completed", s, "evt_a"))) == {"received": True, "ignored": "another app"}
     assert not billing.has_access("user-1")
-    webhooks.handle(*signed(event("checkout.session.completed", s, "evt_a")))  # same event id, separate app: not a duplicate
-    assert billing.has_access("user-1")
+    assert calls == []
 
 
 def test_full_refund_revokes_one_time_access():
