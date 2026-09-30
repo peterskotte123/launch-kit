@@ -1,6 +1,9 @@
 fastapi>=0.110
 uvicorn[standard]>=0.30
 jinja2>=3.1
+# smoke test (fastapi.testclient needs httpx)
+pytest>=8
+httpx>=0.27
 # launchkit: local dev uses the checkout next door; for deploys pin the git tag once the repo is on GitHub:
 #   launchkit @ git+https://github.com/<you>/launch-kit@v0.1.0
 -e ../launch-kit
