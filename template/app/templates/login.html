@@ -9,6 +9,11 @@
 </form>
 <p id="msg" class="muted"></p>
 <script>
+  const next = new URLSearchParams(location.search).get("next");
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/app";
+  if (typeof sb !== "undefined") {
+    sb.auth.getSession().then(({ data }) => { if (data.session) { setToken(data.session); location.replace(dest); } });
+  }
   document.getElementById("f").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msg = document.getElementById("msg");

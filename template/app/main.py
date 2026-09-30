@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -39,7 +40,8 @@ def page(request, name, **ctx):
 def signed_in(request: Request):
     user = auth.optional_user(request)
     if not user:
-        raise HTTPException(303, headers={"Location": "/login"})
+        # The cookie lapses after an hour; /login renews it from the Supabase session and comes straight back.
+        raise HTTPException(303, headers={"Location": "/login?next=" + quote(request.url.path)})
     return user
 
 

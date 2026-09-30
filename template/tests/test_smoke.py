@@ -42,7 +42,7 @@ def test_landing_shows_pricing(client):
 def test_signed_out_redirects_to_login(client):
     for path in ("/app", "/checkout", "/portal"):
         r = client.get(path, follow_redirects=False)
-        assert r.status_code == 303 and r.headers["location"] == "/login", path
+        assert r.status_code == 303 and r.headers["location"] == "/login?next=" + path, path
 
 
 def test_pay_then_access(client):
