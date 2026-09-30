@@ -36,6 +36,26 @@ def test_check_sitemap():
     assert not check.check_sitemap("<urlset>", "2026-09-29")[0][1]
 
 
+def test_check_sitemap_today_in_any_timezone():
+    def xml(*mods):
+        return ('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + "".join(
+            f"<url><loc>https://x.dev/{i}</loc><lastmod>{m}</lastmod></url>" for i, m in enumerate(mods)) + "</urlset>")
+    today = "2026-09-30"  # UTC
+    stale = [
+        ("2026-09-30", "2026-09-30"),                                 # date-only, UTC today
+        ("2026-09-29", "2026-09-29"),                                 # date-only, US local today (UTC already next day)
+        ("2026-10-01", "2026-10-01"),                                 # date-only, Asia local today
+        ("2026-09-30T07:44:00Z", "2026-09-30T07:44:00+00:00"),        # full timestamp, UTC
+        ("2026-09-29T23:30:00-08:00", "2026-09-29T21:00:00-07:00"),   # full timestamp, US local
+        ("2026-09-30T00:10:00+09:00", "2026-09-30T08:00:00+09:00"),   # full timestamp, Asia local
+    ]
+    for mods in stale:
+        assert not check.check_sitemap(xml(*mods), today)[1][1], mods
+    assert not check.check_sitemap(xml("2026-09-29", "2026-09-29"), check.datetime.date(2026, 9, 30))[1][1]
+    assert check.check_sitemap(xml("2026-09-29", "2026-08-15T10:00:00-07:00"), today)[1][1]
+    assert check.check_sitemap(xml("2026-09-30", "2026-09-01"), today)[1][1]
+
+
 def test_check_home():
     page = ('<html><head><title>{}</title><meta name="description" content="Find permits">'
             '<link rel="canonical" href="https://x.dev/"></head><body><h1>Hi</h1>{}</body></html>')

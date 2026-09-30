@@ -56,14 +56,28 @@ def check_robots(text):
             ("robots.txt has a Sitemap line", bool(re.search(r"^\s*sitemap:\s*\S", text, re.I | re.M)), "")]
 
 
+def lastmod_date(s):
+    """UTC date of a W3C lastmod ('2026-09-29' or a full timestamp with offset); None if unparseable."""
+    try:
+        if len(s) <= 10:
+            return datetime.date.fromisoformat(s)
+        d = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return (d.astimezone(datetime.timezone.utc) if d.tzinfo else d).date()
+    except ValueError:
+        return None
+
+
 def check_sitemap(text, today):
+    """today: UTC date (or ISO string). Sites stamp lastmod in their own timezone, so any date within a day of
+    UTC today counts as "today"."""
     try:
         root = ET.fromstring(text.encode())
     except ET.ParseError as e:
         return [("sitemap.xml is valid XML", False, str(e))]
-    lastmods = [e.text.strip()[:10] for e in root.iter() if e.tag.endswith("lastmod") and e.text]
+    today = datetime.date.fromisoformat(today) if isinstance(today, str) else today
+    lastmods = [lastmod_date(e.text.strip()) for e in root.iter() if e.tag.endswith("lastmod") and e.text]
     urls = [e for e in root.iter() if e.tag.endswith("}loc") or e.tag == "loc"]
-    all_today = bool(lastmods) and all(d == today for d in lastmods)
+    all_today = bool(lastmods) and all(d is not None and abs((d - today).days) <= 1 for d in lastmods)
     return [("sitemap.xml is valid XML", bool(urls), f"{len(urls)} URLs"),
             ("sitemap lastmod values not all today", bool(lastmods) and not all_today,
              "no lastmod" if not lastmods else f"{len(lastmods)} lastmod, {len(set(lastmods))} distinct")]
@@ -124,7 +138,7 @@ def run(url, secret=None, expect_live=False):
     status, text = fetch(url + "/robots.txt")
     rows += check_robots(text) if status == 200 else [("robots.txt returns 200", False, f"HTTP {status}")]
     status, text = fetch(url + "/sitemap.xml")
-    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     rows += check_sitemap(text, today) if status == 200 else [("sitemap.xml returns 200", False, f"HTTP {status}")]
     status, text = fetch(url + "/")
     rows += check_home(text, host, expect_live) if status == 200 else [("home returns 200", False, f"HTTP {status}")]
